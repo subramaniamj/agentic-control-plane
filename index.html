@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Counting Agents</title>
+<meta name="description" content="Agents are easy to build now. Running many of them together, safely, is the real work. What an agentic control plane is, why it matters now, and how watsonx Orchestrate approaches it.">
+<meta name="author" content="Subbu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Stop counting agents">
+<meta property="og:description" content="Why the next phase of agentic AI needs a control plane, and how watsonx Orchestrate approaches it.">
+<meta property="og:image" content="assets/img/social-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230f62fe'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.2'%3E%3Ccircle cx='16' cy='16' r='3.5'/%3E%3Cpath d='M10 10l3.5 3.5M22 10l-3.5 3.5M10 22l3.5-3.5M22 22l-3.5-3.5'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='8' cy='8' r='2.5'/%3E%3Ccircle cx='24' cy='8' r='2.5'/%3E%3Ccircle cx='8' cy='24' r='2.5'/%3E%3Ccircle cx='24' cy='24' r='2.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="assets/css/article.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("acp-theme");
+      if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<!-- Icon set (line icons drawn for this article) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-user" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="11" r="5"/><path d="M7 26c0-5 4-8 9-8s9 3 9 8"/></symbol>
+    <symbol id="i-updown" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 25V7M6 12l5-5 5 5M21 7v18M16 20l5 5 5-5"/></symbol>
+    <symbol id="i-cycle" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M25.5 13A10 10 0 0 0 7.5 10"/><path d="M7 4.5V10h5.5"/><path d="M6.5 19a10 10 0 0 0 18 3"/><path d="M25 27.5V22h-5.5"/></symbol>
+    <symbol id="i-network" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="3.5"/><circle cx="7" cy="7" r="2.5"/><circle cx="25" cy="7" r="2.5"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="25" r="2.5"/><path d="M9 9l4.5 4.5M23 9l-4.5 4.5M9 23l4.5-4.5M23 23l-4.5-4.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h17v12h-9l-5 4v-4H4z"/><path d="M21 11h7v11h-3v4l-4.5-4H14v-4"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3L7 18h8l-2 11 12-16h-8z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="9" height="9"/><rect x="19" y="4" width="9" height="9"/><rect x="4" y="19" width="9" height="9"/><rect x="19" y="19" width="9" height="9"/></symbol>
+    <symbol id="i-link" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 19l6-6"/><path d="M14.5 8.5l2-2a5.5 5.5 0 0 1 8 8l-2 2"/><path d="M17.5 23.5l-2 2a5.5 5.5 0 0 1-8-8l2-2"/></symbol>
+    <symbol id="i-route" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="16" r="3"/><circle cx="25.5" cy="7.5" r="3"/><circle cx="25.5" cy="24.5" r="3"/><path d="M9.5 16H14c3.5 0 4-8.5 8.5-8.5M14 16c3.5 0 4 8.5 8.5 8.5"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="9" height="12"/><rect x="20" y="10" width="9" height="12"/><path d="M12 16h8M15 13l-3 3 3 3M17 13l3 3-3 3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l10 4v8c0 7-5 12-10 14C11 27 6 22 6 15V7z"/><path d="M11.5 16l3.5 3.5 6-7"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h6l3-8 5 15 3-7h9"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></symbol>
+    <symbol id="i-message" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 6h24v16H13l-6 5v-5H4z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="5.5"/><path d="M16 2.5v3.5M16 26v3.5M2.5 16H6M26 16h3.5M6.5 6.5l2.5 2.5M23 23l2.5 2.5M6.5 25.5L9 23M23 9l2.5-2.5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 4.5A11.5 11.5 0 1 0 27.5 19 9.5 9.5 0 0 1 13 4.5z"/></symbol>
+  </defs>
+</svg>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__inner">
+    <div class="masthead__brand">
+      <svg class="mark" aria-hidden="true"><use href="#i-network"/></svg>
+      <strong>Subbu</strong><span>Senior technical pre-sales<span class="hide-sm"> · Asia Pacific</span></span>
+    </div>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+      <svg class="i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+      <svg class="i-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <header class="hero wrap">
+    <p class="eyebrow">A view from the field</p>
+    <h1>Stop counting agents</h1>
+    <p class="dek">Agents are easy to build now. Running lots of them, together and safely, is the real work. That's the job of an agentic control plane.</p>
+    <div class="byline">
+      <span class="avatar" aria-hidden="true">S</span>
+      <div><strong>Subbu</strong>October 2026 · 4 min read</div>
+    </div>
+  </header>
+
+  <section class="wrap prose">
+    <p class="lead">Every team got the same memo this year: build agents.</p>
+    <p>So they did. HR has one in Teams. Sales has one inside the CRM. The service desk built a few on a framework nobody else in the company uses. Each one works well on its own.</p>
+    <p>Now try a simple question. How many agents are running across the business today? Who owns them? What are they allowed to touch?</p>
+    <p>If the honest answer starts with "let me check", keep reading.</p>
+  </section>
+
+  <section class="thesis" aria-label="The core idea">
+    <div class="wrap">
+      <div class="rule" aria-hidden="true"></div>
+      <blockquote>
+        <p class="not">The next phase of agentic AI will not be defined by how many agents an enterprise can create.</p>
+        <p class="but">It will be defined by how well those agents <b>work together</b>, <b>connect to existing systems</b> and <b>operate with accountability</b>.</p>
+      </blockquote>
+    </div>
+  </section>
+
+  <section class="wrap prose">
+    <span class="kicker">01 · The problem</span>
+    <h2>Building agents got easy. Running them didn't.</h2>
+    <p>Not long ago, getting one useful agent into production was the hard part. Now agent builders are everywhere, and much of the software you already pay for ships with agents of its own.</p>
+    <p>That's progress, with a catch. Every agent holds credentials, calls systems and makes decisions. Without a shared layer above them, you get <em>agent sprawl</em>: plenty of capable agents, no single view, and different rules for each one.</p>
+  </section>
+
+  <figure class="figure wide" id="fig-sprawl">
+    <div class="figure__card">
+      <p class="figure__label">Figure 1</p>
+      <p class="figure__title">Same agents. Very different day two.</p>
+      <div class="compare">
+
+        <div class="panel">
+          <span class="tag tag--red">Without a control plane</span>
+          <svg viewBox="0 0 380 260" role="img" aria-label="People connect to four agents through tangled lines, and each agent wires itself to several business systems.">
+            <g class="d-faint">
+              <path d="M95 42Q70 60 55 91"/><path d="M95 42Q180 50 240 86"/><path d="M190 42Q160 80 150 126"/><path d="M190 42Q300 70 325 131"/><path d="M190 42Q100 55 55 91"/><path d="M285 42Q260 60 240 86"/><path d="M285 42Q200 70 150 126"/>
+              <path d="M55 119Q45 170 42 221"/><path d="M55 119Q180 150 264 221"/><path d="M55 119Q250 160 338 221"/><path d="M150 154Q80 180 42 221"/><path d="M150 154Q125 190 116 221"/><path d="M150 154Q280 170 338 221"/><path d="M240 114Q255 170 264 221"/><path d="M240 114Q200 170 190 221"/><path d="M240 114Q150 160 116 221"/><path d="M325 159Q150 170 42 221"/><path d="M325 159Q230 190 190 221"/><path d="M325 159Q335 190 338 221"/>
+            </g>
+            <g class="d-ico-n"><use href="#i-user" x="81" y="8" width="28" height="28"/><use href="#i-user" x="176" y="8" width="28" height="28"/><use href="#i-user" x="271" y="8" width="28" height="28"/></g>
+            <rect class="d-box" x="13" y="91" width="84" height="28"/><text class="d-t13" x="55" y="110" text-anchor="middle">HR agent</text>
+            <rect class="d-box" x="108" y="126" width="84" height="28"/><text class="d-t13" x="150" y="145" text-anchor="middle">Sales agent</text>
+            <rect class="d-box" x="198" y="86" width="84" height="28"/><text class="d-t13" x="240" y="105" text-anchor="middle">IT agent</text>
+            <rect class="d-box" x="283" y="131" width="84" height="28"/><text class="d-t13" x="325" y="150" text-anchor="middle">SaaS agent</text>
+            <rect class="d-sys" x="10" y="221" width="64" height="28"/><text class="d-t13" x="42" y="240" text-anchor="middle">CRM</text>
+            <rect class="d-sys" x="84" y="221" width="64" height="28"/><text class="d-t13" x="116" y="240" text-anchor="middle">ERP</text>
+            <rect class="d-sys" x="158" y="221" width="64" height="28"/><text class="d-t13" x="190" y="240" text-anchor="middle">HRIS</text>
+            <rect class="d-sys" x="232" y="221" width="64" height="28"/><text class="d-t13" x="264" y="240" text-anchor="middle">Tickets</text>
+            <rect class="d-sys" x="306" y="221" width="64" height="28"/><text class="d-t13" x="338" y="240" text-anchor="middle">Data</text>
+          </svg>
+          <ul class="points points--bad">
+            <li><svg aria-hidden="true"><use href="#i-x"/></svg>Every agent wired to systems on its own</li>
+            <li><svg aria-hidden="true"><use href="#i-x"/></svg>Rules change from agent to agent</li>
+            <li><svg aria-hidden="true"><use href="#i-x"/></svg>No single trace when something breaks</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <span class="tag tag--green">With a control plane</span>
+          <svg viewBox="0 0 380 260" role="img" aria-label="People reach agents through one control plane, and agents reach business systems through a shared, orderly connection layer.">
+            <g class="d-blue">
+              <path d="M95 42V62M190 42V62M285 42V62"/>
+              <path d="M55 100V131M145 100V131M235 100V131M325 100V131"/>
+              <path d="M55 159V190M145 159V190M235 159V190M325 159V190"/>
+              <path d="M42 190H338"/>
+              <path d="M42 190V221M116 190V221M190 190V221M264 190V221M338 190V221"/>
+            </g>
+            <g class="d-ico-n"><use href="#i-user" x="81" y="8" width="28" height="28"/><use href="#i-user" x="176" y="8" width="28" height="28"/><use href="#i-user" x="271" y="8" width="28" height="28"/></g>
+            <rect class="d-gw" x="10" y="62" width="360" height="38"/>
+            <text class="d-t14" x="190" y="86" text-anchor="middle" font-weight="600">Control plane</text>
+            <rect class="d-box" x="13" y="131" width="84" height="28"/><text class="d-t13" x="55" y="150" text-anchor="middle">HR agent</text>
+            <rect class="d-box" x="103" y="131" width="84" height="28"/><text class="d-t13" x="145" y="150" text-anchor="middle">Sales agent</text>
+            <rect class="d-box" x="193" y="131" width="84" height="28"/><text class="d-t13" x="235" y="150" text-anchor="middle">IT agent</text>
+            <rect class="d-box" x="283" y="131" width="84" height="28"/><text class="d-t13" x="325" y="150" text-anchor="middle">SaaS agent</text>
+            <rect class="d-sys" x="10" y="221" width="64" height="28"/><text class="d-t13" x="42" y="240" text-anchor="middle">CRM</text>
+            <rect class="d-sys" x="84" y="221" width="64" height="28"/><text class="d-t13" x="116" y="240" text-anchor="middle">ERP</text>
+            <rect class="d-sys" x="158" y="221" width="64" height="28"/><text class="d-t13" x="190" y="240" text-anchor="middle">HRIS</text>
+            <rect class="d-sys" x="232" y="221" width="64" height="28"/><text class="d-t13" x="264" y="240" text-anchor="middle">Tickets</text>
+            <rect class="d-sys" x="306" y="221" width="64" height="28"/><text class="d-t13" x="338" y="240" text-anchor="middle">Data</text>
+          </svg>
+          <ul class="points points--good">
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>One front door for people and channels</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Shared policies and access rules</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Every step traced, wherever the agent runs</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </figure>
+
+  <section class="wrap prose">
+    <span class="kicker">02 · The idea</span>
+    <h2>So what is a control plane?</h2>
+    <p>The term comes from networking. The data plane moves the traffic. The control plane decides where traffic goes and keeps the rules.</p>
+    <p>Think of an airport. Airlines own and fly the planes. The control tower doesn't fly anything. It knows every aircraft in its airspace, decides who lands where, and keeps a record of what happened.</p>
+    <p>An agentic control plane is that tower for your agents. The agents still do the work, wherever they were built. The control plane sends each request to the right one, sets what each is allowed to do, and keeps a trace of every step.</p>
+
+    <span class="kicker">03 · The timing</span>
+    <h2>Why it matters now</h2>
+  </section>
+
+  <figure class="figure wide" id="fig-why">
+    <div class="figure__card">
+      <p class="figure__label">Figure 2 · Three shifts</p>
+      <div class="trio">
+        <div class="trio__item">
+          <span class="trio__num">01</span>
+          <svg aria-hidden="true"><use href="#i-bolt"/></svg>
+          <h3>Agents act now</h3>
+          <p>They don't just answer questions. They update records, raise tickets and call APIs. Actions need someone accountable.</p>
+        </div>
+        <div class="trio__item">
+          <span class="trio__num">02</span>
+          <svg aria-hidden="true"><use href="#i-grid"/></svg>
+          <h3>Agents live everywhere</h3>
+          <p>Your CRM, your collaboration suite and your cloud provider all bring agents. No single vendor will own your whole estate.</p>
+        </div>
+        <div class="trio__item">
+          <span class="trio__num">03</span>
+          <svg aria-hidden="true"><use href="#i-link"/></svg>
+          <h3>Connecting got easy</h3>
+          <p>MCP links agents to tools. A2A links agents to each other. Easy connection without control just means faster sprawl.</p>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <section class="wrap prose">
+    <span class="kicker">04 · The answer</span>
+    <h2>How watsonx Orchestrate approaches it</h2>
+    <p>watsonx Orchestrate began as a place to build agents. It has grown into the layer that runs them, including agents it didn't build.</p>
+    <p>The part I find most useful: nothing has to be rebuilt to join. An agent built elsewhere registers without code changes and keeps running where it is. Orchestrate adds the routing, the rules and the visibility around it.</p>
+  </section>
+
+  <figure class="figure wide" id="fig-jobs">
+    <div class="figure__card">
+      <p class="figure__label">Figure 3</p>
+      <p class="figure__title">Four jobs of a control plane, and how Orchestrate handles each</p>
+      <div class="jobs">
+        <div class="job">
+          <svg aria-hidden="true"><use href="#i-route"/></svg>
+          <h3>Coordinate</h3>
+          <p class="job__task">Send each request to the right agent, and let agents hand work to each other.</p>
+          <p class="job__how"><span>IN ORCHESTRATE</span>Orchestrator agents route work to collaborator agents, built in Orchestrate or elsewhere.</p>
+        </div>
+        <div class="job">
+          <svg aria-hidden="true"><use href="#i-plug"/></svg>
+          <h3>Connect</h3>
+          <p class="job__task">Reach agents, tools, models and data wherever they run.</p>
+          <p class="job__how"><span>IN ORCHESTRATE</span>Gateways for agents (A2A, chat completions), tools (MCP, APIs) and models, plus connectors to your own knowledge stores.</p>
+        </div>
+        <div class="job">
+          <svg aria-hidden="true"><use href="#i-shield"/></svg>
+          <h3>Govern</h3>
+          <p class="job__task">Decide what each agent can reach, and stop what it shouldn't do.</p>
+          <p class="job__how"><span>IN ORCHESTRATE</span>Central policies, content guardrails, identity and access control, and a versioned agent catalog.</p>
+        </div>
+        <div class="job">
+          <svg aria-hidden="true"><use href="#i-pulse"/></svg>
+          <h3>Observe</h3>
+          <p class="job__task">Show what every agent did, why, and at what cost.</p>
+          <p class="job__how"><span>IN ORCHESTRATE</span>Evaluation before and after release, monitoring, traces and audit logs. External agents report in through OpenTelemetry.</p>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="figure xwide" id="fig-arch">
+    <div class="figure__card">
+      <p class="figure__label">Figure 4</p>
+      <p class="figure__title">watsonx Orchestrate as an agentic control plane</p>
+      <p class="figure__sub">Open, pluggable orchestration with central governance, for agents running anywhere.</p>
+      <div class="arch-scroll">
+        <svg viewBox="0 0 1320 810" role="img" aria-labelledby="arch-t arch-d">
+          <title id="arch-t">watsonx Orchestrate as an agentic control plane</title>
+          <desc id="arch-d">End users reach orchestrator agents from any channel. Orchestrator agents route work to agents built in Orchestrate and to third-party agents. Gateways connect to agents deployed anywhere over A2A or chat completions, tools over MCP or APIs, models over APIs, and your own data through knowledge connectors. AgentOps evaluates, monitors, optimises and traces everything.</desc>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="d-arrow" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <!-- Control plane boundary -->
+          <rect class="d-boundary" x="270" y="30" width="630" height="720"/>
+          <text class="d-title" x="290" y="62">watsonx Orchestrate</text>
+
+          <!-- End user and channels -->
+          <circle class="d-node-n" cx="55" cy="300" r="32"/>
+          <use class="d-ico-n" href="#i-user" x="41" y="286" width="28" height="28"/>
+          <text class="d-t14" x="55" y="356" text-anchor="middle">End user</text>
+          <line class="d-line" x1="87" y1="300" x2="136" y2="300" marker-end="url(#ah)"/>
+          <circle class="d-node-n" cx="170" cy="300" r="32"/>
+          <use class="d-ico-n" href="#i-updown" x="156" y="286" width="28" height="28"/>
+          <line class="d-line" x1="170" y1="332" x2="170" y2="395"/>
+          <text class="d-t14 d-t2" x="104" y="532" text-anchor="end">Channels</text>
+          <g>
+            <rect class="d-chip" x="118" y="395" width="104" height="32"/><text class="d-t14" x="170" y="416" text-anchor="middle">Custom</text>
+            <rect class="d-chip" x="118" y="435" width="104" height="32"/><text class="d-t14" x="170" y="456" text-anchor="middle">Slack</text>
+            <rect class="d-chip" x="118" y="475" width="104" height="32"/><text class="d-t14" x="170" y="496" text-anchor="middle">Copilot</text>
+            <rect class="d-chip" x="118" y="515" width="104" height="32"/><text class="d-t14" x="170" y="536" text-anchor="middle">Teams</text>
+            <rect class="d-chip" x="118" y="555" width="104" height="32"/><text class="d-t14" x="170" y="576" text-anchor="middle">Salesforce</text>
+            <rect class="d-chip" x="118" y="595" width="104" height="32"/><text class="d-t14" x="170" y="616" text-anchor="middle">Voice</text>
+            <rect class="d-chip" x="118" y="635" width="104" height="32"/><text class="d-t14" x="170" y="656" text-anchor="middle">WhatsApp</text>
+          </g>
+          <line class="d-line" x1="202" y1="300" x2="354" y2="300" marker-start="url(#ah)" marker-end="url(#ah)"/>
+
+          <!-- Orchestrator agents and routing -->
+          <circle class="d-node" cx="390" cy="300" r="34"/>
+          <use class="d-ico" href="#i-cycle" x="374" y="284" width="32" height="32"/>
+          <text class="d-t" x="390" y="360" text-anchor="middle">Orchestrator</text>
+          <text class="d-t" x="390" y="380" text-anchor="middle">agents</text>
+          <path class="d-line" d="M424 300H500V110H584" marker-end="url(#ah)"/>
+          <line class="d-line" x1="500" y1="300" x2="584" y2="300" marker-end="url(#ah)"/>
+
+          <!-- Third-party agents -->
+          <circle class="d-node" cx="620" cy="110" r="34"/>
+          <use class="d-ico" href="#i-network" x="604" y="94" width="32" height="32"/>
+          <text class="d-t" x="620" y="170" text-anchor="middle">Third-party agent</text>
+          <text class="d-t" x="620" y="190" text-anchor="middle">connections</text>
+          <line class="d-line" x1="654" y1="110" x2="753" y2="110" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <rect class="d-gw" x="755" y="80" width="120" height="60"/>
+          <text class="d-t" x="815" y="106" text-anchor="middle">Agent</text>
+          <text class="d-t" x="815" y="126" text-anchor="middle">gateway</text>
+
+          <!-- Orchestrate agents -->
+          <circle class="d-node" cx="620" cy="300" r="34"/>
+          <use class="d-ico" href="#i-chat" x="604" y="284" width="32" height="32"/>
+          <text class="d-t" x="620" y="360" text-anchor="middle">Orchestrate</text>
+          <text class="d-t" x="620" y="380" text-anchor="middle">agents</text>
+          <line class="d-line" x1="654" y1="300" x2="753" y2="300" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <rect class="d-gw" x="755" y="270" width="120" height="60"/>
+          <text class="d-t" x="815" y="296" text-anchor="middle">MCP</text>
+          <text class="d-t" x="815" y="316" text-anchor="middle">gateway</text>
+
+          <!-- Build layer -->
+          <line class="d-line" x1="620" y1="425" x2="620" y2="394" marker-end="url(#ah)"/>
+          <line class="d-line" x1="360" y1="425" x2="815" y2="425"/>
+          <line class="d-line" x1="360" y1="425" x2="360" y2="457" marker-end="url(#ah)"/>
+          <line class="d-line" x1="515" y1="425" x2="515" y2="457" marker-end="url(#ah)"/>
+          <line class="d-line" x1="660" y1="425" x2="660" y2="457" marker-end="url(#ah)"/>
+          <line class="d-line" x1="815" y1="425" x2="815" y2="457" marker-end="url(#ah)"/>
+          <rect class="d-box" x="290" y="460" width="140" height="90"/>
+          <text class="d-t14" x="360" y="490" text-anchor="middle">Agentic workflows,</text>
+          <text class="d-t14" x="360" y="510" text-anchor="middle">Langflow,</text>
+          <text class="d-t14" x="360" y="530" text-anchor="middle">LangGraph</text>
+          <rect class="d-box" x="445" y="460" width="140" height="90"/>
+          <text class="d-t14" x="515" y="490" text-anchor="middle">Catalog of</text>
+          <text class="d-t14" x="515" y="510" text-anchor="middle">pre-built agents</text>
+          <text class="d-t14" x="515" y="530" text-anchor="middle">and tools</text>
+          <rect class="d-box" x="600" y="460" width="120" height="60"/>
+          <text class="d-t14" x="660" y="486" text-anchor="middle">Agent</text>
+          <text class="d-t14" x="660" y="506" text-anchor="middle">knowledge</text>
+          <rect class="d-gw" x="755" y="460" width="120" height="60"/>
+          <text class="d-t" x="815" y="486" text-anchor="middle">Model</text>
+          <text class="d-t" x="815" y="506" text-anchor="middle">gateway</text>
+          <rect class="d-box" x="290" y="575" width="140" height="50"/>
+          <text class="d-t14" x="360" y="605" text-anchor="middle">Default models</text>
+          <path class="d-line" d="M660 520V605H753" marker-end="url(#ah)"/>
+          <rect class="d-gw" x="755" y="575" width="120" height="60"/>
+          <text class="d-t" x="815" y="601" text-anchor="middle">Knowledge</text>
+          <text class="d-t" x="815" y="621" text-anchor="middle">connector</text>
+
+          <!-- AgentOps -->
+          <text class="d-h" x="582" y="672" text-anchor="middle">AgentOps</text>
+          <rect class="d-box" x="290" y="684" width="585" height="42"/>
+          <path class="d-faint" d="M436 692V718M582 692V718M728 692V718"/>
+          <text class="d-t14" x="363" y="710" text-anchor="middle">Evaluate</text>
+          <text class="d-t14" x="509" y="710" text-anchor="middle">Monitor</text>
+          <text class="d-t14" x="655" y="710" text-anchor="middle">Optimise</text>
+          <text class="d-t14" x="802" y="710" text-anchor="middle">Trace logs</text>
+          <line class="d-line" x1="875" y1="705" x2="993" y2="705" marker-end="url(#ah)"/>
+          <text class="d-t14" x="1003" y="700">Storage and reporting</text>
+          <text class="d-t14" x="1003" y="719">of your choice</text>
+
+          <!-- Protocols -->
+          <line class="d-line" x1="877" y1="110" x2="998" y2="110" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="d-proto" x="952" y="101" text-anchor="middle">A2A</text>
+          <text class="d-proto" x="952" y="128" text-anchor="middle">Chat</text>
+          <text class="d-proto" x="952" y="143" text-anchor="middle">completions</text>
+          <line class="d-line" x1="877" y1="300" x2="998" y2="300" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="d-proto" x="952" y="291" text-anchor="middle">MCP</text>
+          <text class="d-proto" x="952" y="318" text-anchor="middle">API</text>
+          <line class="d-line" x1="877" y1="490" x2="998" y2="490" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="d-proto" x="952" y="481" text-anchor="middle">API</text>
+          <line class="d-line" x1="877" y1="605" x2="998" y2="605" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="d-proto" x="952" y="596" text-anchor="middle">API</text>
+
+          <!-- Anywhere: agents, tools, models, data -->
+          <text class="d-h" x="1000" y="58">Agents deployed anywhere</text>
+          <line class="d-faint" x1="1000" y1="110" x2="1312" y2="110"/>
+          <rect class="d-tile" x="1000" y="82" width="100" height="56"/><text class="d-t13" x="1050" y="115" text-anchor="middle">Agentforce</text>
+          <rect class="d-tile" x="1106" y="82" width="100" height="56"/><text class="d-t13" x="1156" y="106" text-anchor="middle">Amazon</text><text class="d-t13" x="1156" y="124" text-anchor="middle">AgentCore</text>
+          <rect class="d-tile" x="1212" y="82" width="100" height="56"/><text class="d-t13" x="1262" y="115" text-anchor="middle">Copilot</text>
+
+          <text class="d-h" x="1000" y="248">Tools running anywhere</text>
+          <line class="d-faint" x1="1000" y1="300" x2="1312" y2="300"/>
+          <rect class="d-tile" x="1000" y="272" width="100" height="56"/><text class="d-t13" x="1050" y="296" text-anchor="middle">Enterprise</text><text class="d-t13" x="1050" y="314" text-anchor="middle">apps</text>
+          <rect class="d-tile" x="1106" y="272" width="100" height="56"/><text class="d-t13" x="1156" y="305" text-anchor="middle">Automation</text>
+          <rect class="d-tile" x="1212" y="272" width="100" height="56"/><text class="d-t13" x="1262" y="305" text-anchor="middle">Collaboration</text>
+
+          <text class="d-h" x="1000" y="438">Models hosted anywhere</text>
+          <line class="d-faint" x1="1000" y1="490" x2="1312" y2="490"/>
+          <rect class="d-tile" x="1000" y="462" width="100" height="56"/><text class="d-t13" x="1050" y="495" text-anchor="middle">Claude</text>
+          <rect class="d-tile" x="1106" y="462" width="100" height="56"/><text class="d-t13" x="1156" y="495" text-anchor="middle">OpenAI</text>
+          <rect class="d-tile" x="1212" y="462" width="100" height="56"/><text class="d-t13" x="1262" y="495" text-anchor="middle">Bedrock</text>
+
+          <text class="d-h" x="1000" y="553">Bring your own data</text>
+          <line class="d-faint" x1="1000" y1="605" x2="1312" y2="605"/>
+          <rect class="d-tile" x="1000" y="577" width="100" height="56"/><text class="d-t13" x="1050" y="610" text-anchor="middle">Elastic</text>
+          <rect class="d-tile" x="1106" y="577" width="100" height="56"/><text class="d-t13" x="1156" y="610" text-anchor="middle">AstraDB</text>
+          <rect class="d-tile" x="1212" y="577" width="100" height="56"/><text class="d-t13" x="1262" y="610" text-anchor="middle">Azure AI</text>
+
+          <!-- Deployment -->
+          <text class="d-cap" x="585" y="792" text-anchor="middle">SaaS on AWS or IBM Cloud  ·  Hybrid cloud on Red Hat OpenShift</text>
+        </svg>
+      </div>
+      <p class="scroll-hint">Scroll sideways to see the whole diagram, or <a href="assets/infographics/04-control-plane-architecture.png">open it full size</a>.</p>
+      <div class="pillars">
+        <div><svg aria-hidden="true"><use href="#i-chat"/></svg>Deploy in whichever channel your people already use</div>
+        <div><svg aria-hidden="true"><use href="#i-link"/></svg>Built on open standards such as MCP and A2A</div>
+        <div><svg aria-hidden="true"><use href="#i-network"/></svg>Orchestrate across any framework or third-party agent</div>
+      </div>
+    </div>
+    <figcaption>Third-party names are examples of where agents, tools, models and data can live. All trademarks belong to their owners.</figcaption>
+  </figure>
+
+  <section class="wrap prose">
+    <p>Read it left to right:</p>
+    <ul class="read-it">
+      <li><b>Left.</b> People stay in the channels they already use.</li>
+      <li><b>Middle.</b> Orchestrator agents decide who does the work, and AgentOps watches every step.</li>
+      <li><b>Right.</b> Agents, tools, models and data stay where they are. Gateways and open standards bring them in.</li>
+    </ul>
+
+    <span class="kicker">05 · In practice</span>
+    <h2>One request, end to end</h2>
+    <p>Here's how that plays out for something ordinary. It's an illustrative example, not a specific deployment.</p>
+  </section>
+
+  <figure class="figure wide" id="fig-journey">
+    <div class="figure__card">
+      <p class="figure__label">Figure 5</p>
+      <p class="figure__title">Follow one request through the control plane</p>
+      <p class="journey-quote"><svg aria-hidden="true"><use href="#i-message"/></svg>"Get our new joiner set up for Monday."</p>
+      <ol class="journey">
+        <li>
+          <h3>Ask</h3>
+          <p>A manager types the request in Teams. No new app, no form.</p>
+        </li>
+        <li>
+          <h3>Route</h3>
+          <p>An orchestrator agent breaks the request down and picks an agent for each part.</p>
+        </li>
+        <li>
+          <h3>Act</h3>
+          <p>An HR agent creates the record. An IT agent on another platform orders the laptop. The service desk tool gets a ticket.</p>
+          <span class="via">A2A · MCP</span>
+        </li>
+        <li>
+          <h3>Check</h3>
+          <p>Policies and guardrails apply on the way through. Each agent reaches only what it has been given.</p>
+        </li>
+        <li>
+          <h3>Trace</h3>
+          <p>Every step lands in one trace. If the laptop never shows up, you can see exactly where it stalled.</p>
+        </li>
+      </ol>
+    </div>
+  </figure>
+
+  <section class="wrap prose">
+    <span class="kicker">06 · The test</span>
+    <h2>Back to that question</h2>
+    <p>The number of agents will keep going up. That's fine. It just isn't the number that matters.</p>
+    <p>These three questions tell you more about where you stand:</p>
+    <ul class="questions">
+      <li><label><input type="checkbox"><span>Can you list every agent in production, and who owns it?</span></label></li>
+      <li><label><input type="checkbox"><span>If an agent got something wrong yesterday, could you show exactly what happened?</span></label></li>
+      <li><label><input type="checkbox"><span>Could a new agent, built anywhere, join without a fresh integration project?</span></label></li>
+    </ul>
+    <p>If any answer is "not really", you probably don't need another agent yet. You need the layer that runs the ones you already have.</p>
+    <p class="signoff">I'd love to hear how others are handling this. What's the hardest part of running agents at scale in your organisation?</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <h2>Further reading</h2>
+    <ol class="refs">
+      <li><a href="https://www.ibm.com/new/announcements/introducing-the-agentic-control-plane">Introducing the Agentic Control Plane in watsonx Orchestrate</a><small>Announcement, July 2026</small></li>
+      <li><a href="https://www.ibm.com/products/watsonx-orchestrate/agent-control-plane">Agent control plane</a><small>Product overview</small></li>
+      <li><a href="https://developer.ibm.com/articles/watsonx-orchestrate-agentic-control-plane/">Use watsonx Orchestrate as an agentic control plane for external AI agents</a><small>Developer article, September 2026</small></li>
+      <li><a href="https://www.ibm.com/docs/en/SSAVQO/agent_builder/third-party.html">Adding agents from third-party platforms</a><small>Product documentation</small></li>
+    </ol>
+    <p class="fine">Views are my own and do not necessarily represent those of my employer.</p>
+    <p class="fine">Product names mentioned are trademarks of their respective owners.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById("theme-toggle");
+    var meta = document.querySelector('meta[name="theme-color"]');
+    function sync() {
+      var dark = root.getAttribute("data-theme") === "dark";
+      btn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+      if (meta) meta.setAttribute("content", dark ? "#161616" : "#ffffff");
+    }
+    btn.addEventListener("click", function () {
+      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("acp-theme", next); } catch (e) {}
+      sync();
+    });
+    sync();
+
+    var bar = document.getElementById("progress");
+    function onScroll() {
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = (h > 0 ? Math.min(100, (window.scrollY / h) * 100) : 0) + "%";
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+</body>
+</html>
